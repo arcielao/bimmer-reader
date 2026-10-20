@@ -1,0 +1,27 @@
+{
+  "note": "Coding profiles. Each profile says how to read and write one block of a module's coding data, plus 'recipes' that flip bits in it. A profile is used when its 'variant' matches the module's SGBD variant (shown in the module list) or its resolved SGBD name. Args: plain text is passed as text; 'hex:...' is sent as one binary argument. {data} is replaced with the coding bytes as hex. byte = offset into the data read, mask = which bits, on/off = the value of those bits. Only add recipes whose byte/mask you have confirmed for YOUR module variant from a coding guide - wrong values can disable features or the module.",
+  "profiles": [
+    {
+      "name": "FRM demo block",
+      "variant": "FRM_87",
+      "demo_only": true,
+      "read": {"job": "C_C_LESEN", "args": "", "result": "CODIERDATEN"},
+      "write": {"job": "C_C_SCHREIBEN", "args": "hex:{data}"},
+      "recipes": [
+        {"name": "Fold mirrors on lock (demo)", "byte": 12, "mask": "0x04", "on": "0x04", "off": "0x00",
+         "description": "Simulated only - not a real FRM address."},
+        {"name": "Comfort close with key (demo)", "byte": 3, "mask": "0x01", "on": "0x01", "off": "0x00",
+         "description": "Simulated only - not a real FRM address."}
+      ]
+    }
+  ],
+  "example_profile": {
+    "name": "Copy into 'profiles' and fill in",
+    "variant": "<SGBD variant from the module list>",
+    "read": {"job": "<coding read job>", "args": "", "result": "<result name that holds the coding bytes>"},
+    "write": {"job": "<coding write job>", "args": "hex:{data}"},
+    "recipes": [
+      {"name": "<what it does>", "byte": 0, "mask": "0x01", "on": "0x01", "off": "0x00", "description": "<source of this value>"}
+    ]
+  }
+}
