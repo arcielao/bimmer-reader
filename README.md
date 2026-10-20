@@ -185,7 +185,7 @@ Command-line options:
 
 ## Files
 
-- `bimmer_reader.py` – the app.
+- `bimmer_reader.py` – starts the app. The code is in the `bimmer` folder.
 - `modules_e90.json` – module list. Edit it freely.
 - `coding_e90.json` – coding profiles and recipes.
 - `coding_backups/` – created when you read coding. Every read and every

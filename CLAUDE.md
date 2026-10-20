@@ -5,7 +5,7 @@ Guidance for Claude Code when working in this repo.
 ## What this is
 
 Bimmer Reader is an INPA/Tool32-style diagnostic GUI for E-series BMWs (set up
-for a 2006 E90 330xi). It's a single-file Tkinter app that talks to the car
+for a 2006 E90 330xi). It's a Tkinter app that talks to the car
 through EDIABAS (`api32.dll`) via the `pydiabas` package and a K+DCAN cable.
 It reads/clears fault memory, shows identification, polls live `STATUS_*` jobs,
 runs arbitrary SGBD jobs, registers a new battery, and does profile-driven
@@ -17,11 +17,29 @@ when behaviour, options or files change.
 
 ## Files
 
-- `bimmer_reader.py` – the whole app (~1700 lines). Sections, in order:
-  helpers → backends (`EdiabasBackend`, `DemoBackend`) → `Worker` thread →
-  `App` (Tkinter GUI) → `main()`. Inside `App`, each feature has its own
-  `# ---- name ---- #` section (faults, battery registration, coding, ident,
-  job lists, live data, settings).
+- `bimmer_reader.py` – entry point only (argparse + `main()`). `run.bat`
+  runs this file, so keep its name and location.
+- `bimmer/` – the code:
+  - `config.py` – app constants, file paths (`HERE` is the repo root, so
+    the JSON files and `coding_backups/` sit next to `run.bat`),
+    `load_json`/`save_json`.
+  - `diag.py` – `DiagError` and pure helpers for result sets (`clean_value`,
+    `fmt`, `job_status`, `parse_faults`, `pair_units`, ...).
+  - `coding.py` – pure coding helpers (`build_args`, `coding_bytes`,
+    `hex_dump`, `recipe_state`, `apply_recipe`, `to_int`).
+  - `worker.py` – the single `Worker` thread.
+  - `backends/` – `ediabas.py` (real car via pydiabas) and `demo.py`
+    (simulated car).
+  - `gui/app.py` – `App`: window layout, worker plumbing (`run`, `_pump`),
+    `log`, connection, module list, quick test, settings.
+  - `gui/*_tab.py`, `gui/battery.py` – one mixin per tab or feature
+    (`FaultsTab`, `IdentTab`, `LiveTab`, `JobsTab`, `CodingTab`,
+    `BatteryActions`). Each holds its `_build_*_tab` method and its actions.
+    `App` inherits them all, so they share `self` state and helpers.
+    A new tab means a new mixin added to `App`'s bases and a
+    `_build_*_tab()` call in `App._build`.
+  - `gui/theme.py` – `COLORS`.
+  Keep GUI-free logic out of `gui/` so it stays easy to test without Tk.
 - `coding_e90.json` – coding profiles: per SGBD variant, the read/write jobs,
   args (`hex:` prefix = binary arg, `{data}` = coding bytes) and recipes
   (`byte`, `mask`, `on`, `off`). `demo_only` profiles are hidden unless the
@@ -53,10 +71,13 @@ python bimmer_reader.py --demo
   "only tested in demo mode" caveat accurate.
 - No test suite, no linter config, no dependencies beyond the stdlib and
   `pydiabas`. pydiabas isn't installed on the dev machine; that's fine for
-  demo mode.
+  demo mode. Check imports with `python -m pyflakes bimmer_reader.py bimmer`
+  (pyflakes comes with Anaconda's `python`).
 - To exercise a feature end to end, write a throwaway script in the
-  scratchpad (not the repo): import `bimmer_reader`, replace
-  `messagebox.showinfo/showerror/showwarning/askyesno` (and `filedialog.*`)
+  scratchpad (not the repo): put the repo on `sys.path`, import
+  `App` from `bimmer.gui.app`, replace
+  `tkinter.messagebox.showinfo/showerror/showwarning/askyesno` (and
+  `tkinter.filedialog.*`; patching the shared module covers every tab)
   with stubs that record calls, build `App(root, demo=True)` on a withdrawn
   `tk.Tk()`, call methods like `toggle_connect()` / `read_coding()`, and spin
   `root.update()` for a second or so between steps so the worker callbacks
@@ -112,11 +133,11 @@ python bimmer_reader.py --demo
 ## Style
 
 - Match the existing code: `from __future__ import annotations`, type hints on
-  signatures, compact one-line Tkinter construction, section banners
-  (`# ---- #`), short docstrings, plain-English UI copy written for a home
+  signatures, compact one-line Tkinter construction, a short
+  module docstring at the top of every file, short docstrings, plain-English UI copy written for a home
   mechanic (not an engineer).
-- Keep it a single file with stdlib + `pydiabas` only unless there's a strong
-  reason to change that.
+- Stdlib + `pydiabas` only, unless there's a strong reason to change that.
+- Absolute imports (`from bimmer.diag import fmt`), one feature per module.
 - Windows is the target platform; keep paths and `run.bat` Windows-friendly.
 
 ## Git
