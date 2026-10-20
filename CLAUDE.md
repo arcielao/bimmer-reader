@@ -32,7 +32,7 @@ when behaviour, options or files change.
     (simulated car).
   - `gui/app.py` – `App`: window layout, worker plumbing (`run`, `_pump`),
     `log`, connection, module list, quick test, settings.
-  - `gui/*_tab.py`, `gui/battery.py` – one mixin per tab or feature
+  - `gui/*_tab.py`, `gui/battery.py` (the Battery window) – one mixin per tab or feature
     (`FaultsTab`, `IdentTab`, `LiveTab`, `JobsTab`, `CodingTab`,
     `BatteryActions`). Each holds its `_build_*_tab` method and its actions.
     `App` inherits them all, so they share `self` state and helpers.
@@ -54,6 +54,8 @@ when behaviour, options or files change.
   installs `pydiabas` on first run, forwards args.
 - `bimmer_reader_settings.json` – created at runtime (EDIABAS folder). Per
   machine, not committed.
+- `battery_history.json` – created at runtime, one entry per battery
+  registration done with the app. Gitignored.
 
 ## Running
 
@@ -82,7 +84,9 @@ python bimmer_reader.py --demo
   `tk.Tk()`, call methods like `toggle_connect()` / `read_coding()`, and spin
   `root.update()` for a second or so between steps so the worker callbacks
   run. Check the log text (`app.log_txt`) and the demo backend's state
-  (`app.backend.ecus[...]`). Delete any `coding_backups/` a test creates.
+  (`app.backend.ecus[...]`). Point `bimmer.gui.battery.BATTERY_HISTORY_FILE`
+  at a scratchpad file before registering, and delete any `coding_backups/`
+  a test creates, so test runs never leave fake car data in the repo.
 
 ## Architecture rules
 
@@ -122,6 +126,9 @@ python bimmer_reader.py --demo
   re-reads and aborts if the data changed since the user's read, saves a
   backup, writes, then reads back to verify. Keep every one of those steps.
   Restores are refused unless the variant, block name and length match.
+- Battery history from the car only ever runs read-only jobs
+  (`is_battery_history_job`: `STATUS_*` / `*_LESEN` with no write words).
+  Keep that filter strict.
 - **Never add real-car coding recipes (byte/mask/values) or job names to
   `coding_e90.json` from memory or guesswork.** Wrong values can disable
   modules. Real entries come from the user, citing a source in

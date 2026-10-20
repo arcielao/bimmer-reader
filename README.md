@@ -18,9 +18,10 @@ What it does:
   arguments, like Tool32. It warns before jobs that look like they write,
   clear, code or actuate.
 - **Full report** – one text file with every module's faults.
-- **Register new battery** – tells the DME a new battery was fitted, so the
-  charging system stops treating it as the old, worn one. Same type and
-  capacity only; a different battery needs coding.
+- **Battery** – registers a new battery with the DME, so the charging
+  system stops treating it as the old, worn one (same type and capacity
+  only; a different battery needs coding). It also shows when the battery
+  was last registered.
 - **Coding** – backs up a module's coding data, restores a backup, and
   flips individual settings using recipes you define. Every write is
   backed up first and checked by reading the module back.
@@ -100,10 +101,16 @@ about 12 V, and the header shows the battery voltage.
   - `ANSAUGLUFT` = intake air
   
   Some `STATUS_*` jobs need arguments. Use the Job runner for those.
-- **Register new battery...** (toolbar) finds the registration job in the
-  DME (usually `STEUERN_BATTERIETAUSCH_REGISTRIEREN`), asks first, then runs
-  it. Fit the new battery and turn the ignition on before you click it. If
-  your DME doesn't have the job, the log lists its battery-related jobs.
+- **Battery...** (toolbar) opens the battery window:
+  - **Recorded by the car** shows what the DME's own battery history jobs
+    report, such as the mileage at the last replacement. Not every DME has
+    them, and the names are BMW's (German).
+  - **Registered with this app** lists every registration done here, with
+    the date. It's saved in `battery_history.json`.
+  - **Register new battery...** finds the registration job in the DME
+    (usually `STEUERN_BATTERIETAUSCH_REGISTRIEREN`), asks first, then runs
+    it. Fit the new battery and turn the ignition on before you click it. If
+    your DME doesn't have the job, the log lists its battery-related jobs.
 - **Job runner → List jobs in module.** Filter, pick a job, add arguments
   (separate several with `;`), then **Run**. Tick *Show system set* to see
   which SGBD variant answered.
@@ -188,6 +195,7 @@ Command-line options:
 - `bimmer_reader.py` – starts the app. The code is in the `bimmer` folder.
 - `modules_e90.json` – module list. Edit it freely.
 - `coding_e90.json` – coding profiles and recipes.
+- `battery_history.json` – created when you register a battery with the app.
 - `coding_backups/` – created when you read coding. Every read and every
   write leaves a backup here.
 - `run.bat` – launcher. It checks for 32-bit Python and installs `pydiabas`.
