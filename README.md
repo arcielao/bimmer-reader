@@ -3,6 +3,8 @@
 An INPA-style diagnostic tool for E-series BMWs, set up for a **2006 E90 330xi**.
 It talks to the car through EDIABAS (the same engine INPA uses) and a K+DCAN cable.
 
+**New here? See the [quick guide with screenshots](docs/GUIDE.md).**
+
 What it does:
 
 - **Quick test** – asks every module for its ID and fault count, like INPA's
@@ -198,6 +200,7 @@ Command-line options:
 - `battery_history.json` – created when you register a battery with the app.
 - `coding_backups/` – created when you read coding. Every read and every
   write leaves a backup here.
+- `docs/GUIDE.md` – quick guide with screenshots.
 - `run.bat` – launcher. It checks for 32-bit Python and installs `pydiabas`.
 
 Built on [pydiabas](https://github.com/BembelBytes/pydiabas) (MIT licence).

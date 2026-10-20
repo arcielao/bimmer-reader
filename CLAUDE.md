@@ -50,6 +50,12 @@ when behaviour, options or files change.
   ordered list of `sgbd` names to try (group files like `D_0012` first, then
   older names). The app also rewrites this file when the user adds/removes
   modules in the UI.
+- `docs/GUIDE.md` + `docs/images/` – user quick guide with demo-mode
+  screenshots. When a screen changes visibly, retake its screenshot: drive
+  `App(root, demo=True)` from a scratchpad script, call
+  `ctypes.windll.shcore.SetProcessDpiAwareness(2)` first, and grab the window's
+  DWM frame bounds with `PIL.ImageGrab`. Make sure no scratchpad paths show in
+  the log.
 - `run.bat` – Windows launcher. Requires 32-bit Python via `py -3-32`,
   installs `pydiabas` on first run, forwards args.
 - `bimmer_reader_settings.json` – created at runtime (EDIABAS folder). Per
