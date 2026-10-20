@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Bimmer Reader per-machine settings (EDIABAS folder)
+bimmer_reader_settings.json
