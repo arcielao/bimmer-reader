@@ -1,0 +1,19 @@
+{
+  "vehicle": "E90 330xi (2006)",
+  "note": "Each module lists one or more EDIABAS group/SGBD names to try, in order. The first one that exists in your C:\\EDIABAS\\Ecu folder is used. Add or remove modules freely; names are case-insensitive.",
+  "modules": [
+    {"name": "DME - Engine",            "sgbd": ["D_0012", "D_MOTOR"]},
+    {"name": "EGS - Transmission",      "sgbd": ["D_0018", "D_EGS"]},
+    {"name": "VTG - xDrive transfer",   "sgbd": ["D_0019", "D_VTG"]},
+    {"name": "DSC - Stability / ABS",   "sgbd": ["D_0029", "D_ABSKWP"]},
+    {"name": "ACSM - Airbag",           "sgbd": ["D_0001", "D_MRS"]},
+    {"name": "CAS - Car access",        "sgbd": ["D_0040", "D_CAS"]},
+    {"name": "KOMBI - Instrument cluster", "sgbd": ["D_0060", "D_KOMBI"]},
+    {"name": "JBE - Junction box",      "sgbd": ["D_0000", "D_JBBF"]},
+    {"name": "FRM - Footwell / lights", "sgbd": ["D_0072", "D_FRM"]},
+    {"name": "SZL - Steering column",   "sgbd": ["D_0002", "D_SZL"]},
+    {"name": "IHKA - Climate",          "sgbd": ["D_0078", "D_IHKA"]},
+    {"name": "CCC / M-ASK - Radio/Nav", "sgbd": ["D_0063", "D_CCC", "D_MASK"]},
+    {"name": "PDC - Park distance",     "sgbd": ["D_0064", "D_PDC"]}
+  ]
+}
