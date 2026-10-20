@@ -21,9 +21,13 @@ What it does:
 - **Register new battery** – tells the DME a new battery was fitted, so the
   charging system stops treating it as the old, worn one. Same type and
   capacity only; a different battery needs coding.
+- **Coding** – backs up a module's coding data, restores a backup, and
+  flips individual settings using recipes you define. Every write is
+  backed up first and checked by reading the module back.
 - **Demo mode** – a simulated car, so you can learn the screens first.
 
-It does **not** code (NCS Expert) or flash (WinKFP).
+It doesn't replace NCS Expert (no named options from BMW's coding files) and
+it does **not** flash (WinKFP).
 
 ---
 
@@ -104,6 +108,48 @@ about 12 V, and the header shows the battery voltage.
   (separate several with `;`), then **Run**. Tick *Show system set* to see
   which SGBD variant answered.
 
+## Coding (`coding_e90.json`)
+
+Coding changes how a module behaves. A wrong value can switch off features
+or stop a module working, so read all of this first.
+
+**What you get out of the box:** backup and restore for any module you set up
+a profile for. The only recipes included are for the **demo** car. They
+aren't real addresses and are hidden when connected to a real car. I haven't
+included real byte positions because I can't check them against your
+modules.
+
+**Setting up a module:**
+
+1. Pick the module, open **Coding**, and click **Show coding jobs**. This
+   lists the module's coding jobs and their arguments, taken from BMW's files.
+2. Add a profile to `coding_e90.json` (copy `example_profile`). Set:
+   - `variant`: the variant shown in the module list, e.g. `FRM_87`
+   - `read`: the job that reads the coding block, its `args`, and the
+     `result` name that holds the bytes
+   - `write`: the job that writes it. `hex:{data}` sends the coding bytes as
+     one binary argument.
+3. Restart the app, then **Read coding**. Every read is saved to
+   `coding_backups/`, so you always have the original.
+
+**Recipes** each change a few bits in one byte: `byte` is the position in
+the data, `mask` picks the bits, and `on`/`off` are the values for those bits.
+Get them from a coding guide for **your exact module variant**, and put the
+source in `description`.
+
+**When you click Turn on / Turn off** the app:
+
+1. checks the battery is above 12 V
+2. reads the module again and stops if anything changed since your read
+3. saves a backup
+4. writes
+5. reads back and checks the data matches
+
+If anything misbehaves, use **Restore backup...**. The app only restores a
+backup to the same variant and block it came from.
+
+Keep `coding_backups/` somewhere safe. It's left out of git on purpose.
+
 ## The module list (`modules_e90.json`)
 
 Each module has one or more EDIABAS names to try, in order. `D_0012` etc. are
@@ -141,6 +187,9 @@ Command-line options:
 
 - `bimmer_reader.py` – the app.
 - `modules_e90.json` – module list. Edit it freely.
+- `coding_e90.json` – coding profiles and recipes.
+- `coding_backups/` – created when you read coding. Every read and every
+  write leaves a backup here.
 - `run.bat` – launcher. It checks for 32-bit Python and installs `pydiabas`.
 
 Built on [pydiabas](https://github.com/BembelBytes/pydiabas) (MIT licence).
