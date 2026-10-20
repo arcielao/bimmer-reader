@@ -84,6 +84,10 @@ class App(FaultsTab, IdentTab, LiveTab, JobsTab, CodingTab, BatteryActions):
         s.configure("Muted.TLabel", background=COLORS["panel"], foreground=COLORS["muted"])
         s.configure("Title.TLabel", background=COLORS["panel"], font=(base[0], 12, "bold"))
         s.configure("Treeview", rowheight=24, font=base)
+        # Tk 8.6.9's themes map an explicit colour for unselected rows, which hides
+        # tag colours (green/orange/red). Dropping that entry is a no-op on newer Tk.
+        for opt in ("foreground", "background"):
+            s.map("Treeview", **{opt: [m for m in s.map("Treeview", query_opt=opt) if m[:2] != ("!disabled", "!selected")]})
         s.configure("Treeview.Heading", font=(base[0], 9, "bold"))
         s.configure("Accent.TButton", font=(base[0], 10, "bold"))
         s.configure("TNotebook.Tab", padding=(14, 6))
