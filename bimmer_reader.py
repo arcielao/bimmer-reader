@@ -215,14 +215,16 @@ class EdiabasBackend:
     def connected(self):
         return self._pd is not None
 
-    def job(self, ecu: str, job: str, params: str = "") -> tuple[dict, list[dict]]:
+    def job(self, ecu: str, job: str, params: str | bytes = "", raw: bool = False) -> tuple[dict, list[dict]]:
+        """Run a job. bytes params go to EDIABAS as one binary argument; raw=True skips clean_value."""
         if self._pd is None:
             raise DiagError("Not connected.")
         try:
             result = self._pd.job(ecu, job, parameters=params)
         except Exception as e:
             raise DiagError(str(e) or e.__class__.__name__)
-        dicts = [{k: clean_value(v) for k, v in d.items()} for d in result.as_dicts()]
+        conv = (lambda v: v) if raw else clean_value
+        dicts = [{k: conv(v) for k, v in d.items()} for d in result.as_dicts()]
         if not dicts:
             return {}, []
         return dicts[0], dicts[1:]
@@ -259,7 +261,9 @@ class DemoBackend:
             "D_0001": {"variant": "ACSM", "ident": {"ID_BMW_NR": "9184432", "ID_SW_NR": "DEMO-SW"}, "faults": []},
             "D_0018": {"variant": "GS19D", "ident": {"ID_BMW_NR": "7566376", "ID_SW_NR": "DEMO-SW"}, "faults": []},
             "D_0072": {"variant": "FRM_87", "ident": {"ID_BMW_NR": "9134549", "ID_SW_NR": "DEMO-SW"},
-                       "faults": [(0xA3B6, "Demo fault - low beam left, open circuit (simulated data)", "Fault currently present", 7, "")]},
+                       "faults": [(0xA3B6, "Demo fault - low beam left, open circuit (simulated data)", "Fault currently present", 7, "")],
+                       "coding": bytearray.fromhex("A1 00 3C 02 00 10 00 00 FF 01 00 00 00 08 00 00"
+                                                   "00 00 00 00 00 00 00 00 00 00 00 00 5A 00 00 00")},
             "D_0078": {"variant": "IHKA87", "ident": {"ID_BMW_NR": "9182287", "ID_SW_NR": "DEMO-SW"}, "faults": []},
         }
         # Modules that "exist" as files but don't answer (like an option the car doesn't have)
@@ -288,7 +292,13 @@ class DemoBackend:
             "STATUS_LAMBDA_BANK1": {"STAT_LAMBDA_BANK1_WERT": round(1.0 + random.uniform(-0.02, 0.02), 3), "STAT_LAMBDA_BANK1_EINH": "-"},
         }
 
-    def job(self, ecu: str, job: str, params: str = ""):
+    def job(self, ecu: str, job: str, params: str | bytes = "", raw: bool = False):
+        sys_set, sets = self._job(ecu, job, params)
+        if raw:
+            return sys_set, sets
+        return sys_set, [{k: clean_value(v) for k, v in s.items()} for s in sets]
+
+    def _job(self, ecu: str, job: str, params: str | bytes):
         if not self._on:
             raise DiagError("Not connected.")
         time.sleep(0.08)
@@ -314,9 +324,19 @@ class DemoBackend:
             jobs += list(self._live().keys())
         if e.get("battery"):
             jobs.append("STEUERN_BATTERIETAUSCH_REGISTRIEREN")
+        if "coding" in e:
+            jobs += ["C_C_LESEN", "C_C_SCHREIBEN"]
 
         if job_u == "_JOBS":
             return sys_set, [{"JOBNAME": j} for j in jobs]
+        if job_u in ("_ARGUMENTS", "_JOBCOMMENTS"):
+            info = {
+                "C_C_LESEN": ([], "Read coding data (demo)"),
+                "C_C_SCHREIBEN": ([("CODIERDATEN", "binary", "coding data to write (demo)")], "Write coding data (demo)"),
+            }.get(params.upper() if isinstance(params, str) else "", ([], ""))
+            if job_u == "_ARGUMENTS":
+                return sys_set, [{"ARG": a, "ARGTYPE": t, "ARGCOMMENT": c} for a, t, c in info[0]]
+            return sys_set, [{"JOBCOMMENT0": info[1]}] if info[1] else []
         if job_u == "INFO":
             return sys_set, [{"ECU": e["variant"], "ORIGIN": "demo", "REVISION": "1.0", "JOB_STATUS": "OKAY"}]
         if job_u == "IDENT":
@@ -337,6 +357,13 @@ class DemoBackend:
         if job_u in ("IS_LESEN", "IS_LOESCHEN"):
             return sys_set, [{"JOB_STATUS": "OKAY"}]
         if e.get("battery") and job_u == "STEUERN_BATTERIETAUSCH_REGISTRIEREN":
+            return sys_set, [{"JOB_STATUS": "OKAY"}]
+        if "coding" in e and job_u == "C_C_LESEN":
+            return sys_set, [{"CODIERDATEN": bytes(e["coding"]), "JOB_STATUS": "OKAY"}]
+        if "coding" in e and job_u == "C_C_SCHREIBEN":
+            if not isinstance(params, bytes) or len(params) != len(e["coding"]):
+                return sys_set, [{"JOB_STATUS": "ERROR_LENGTH"}]
+            e["coding"][:] = params
             return sys_set, [{"JOB_STATUS": "OKAY"}]
         if e.get("live") and job_u in self._live():
             return sys_set, [dict(self._live()[job_u], JOB_STATUS="OKAY")]
