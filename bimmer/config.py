@@ -11,6 +11,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # repo root,
 MODULES_FILE = os.path.join(HERE, "modules_e90.json")
 CODING_FILE = os.path.join(HERE, "coding_e90.json")
 BACKUP_DIR = os.path.join(HERE, "coding_backups")
+BATTERY_HISTORY_FILE = os.path.join(HERE, "battery_history.json")
 SETTINGS_FILE = os.path.join(HERE, "bimmer_reader_settings.json")
 DEFAULT_EDIABAS_DIR = r"C:\EDIABAS"
 

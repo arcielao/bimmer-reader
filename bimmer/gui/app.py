@@ -112,7 +112,7 @@ class App(FaultsTab, IdentTab, LiveTab, JobsTab, CodingTab, BatteryActions):
         ttk.Checkbutton(bar, text="Demo mode (no car)", variable=self.demo_var).pack(side="left", padx=12)
         ttk.Button(bar, text="Quick test (all modules)", command=self.quick_test).pack(side="left", padx=4)
         ttk.Button(bar, text="Save full report...", command=self.save_report).pack(side="left", padx=4)
-        ttk.Button(bar, text="Register new battery...", command=self.register_battery).pack(side="left", padx=4)
+        ttk.Button(bar, text="Battery...", command=self.open_battery).pack(side="left", padx=4)
         ttk.Button(bar, text="Settings", command=self.open_settings).pack(side="right")
         self.busy_lbl = ttk.Label(bar, text="", foreground=COLORS["accent"])
         self.busy_lbl.pack(side="right", padx=12)

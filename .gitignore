@@ -222,3 +222,4 @@ __marimo__/
 # Bimmer Reader per-machine settings (EDIABAS folder)
 bimmer_reader_settings.json
 coding_backups/
+battery_history.json

@@ -26,7 +26,7 @@ class DemoBackend:
                     (0x2E81, "Demo fault - thermostat warm-up (simulated data)", "Fault stored, not present", 1, "P0128"),
                 ],
                 "live": True,
-                "battery": True,
+                "battery": {"km": 171204, "count": 1},  # last replacement, as the DME would report it
             },
             "D_0029": {
                 "variant": "DSC_87",
@@ -102,7 +102,7 @@ class DemoBackend:
         if e.get("live"):
             jobs += list(self._live().keys())
         if e.get("battery"):
-            jobs.append("STEUERN_BATTERIETAUSCH_REGISTRIEREN")
+            jobs += ["STEUERN_BATTERIETAUSCH_REGISTRIEREN", "STATUS_BATTERIETAUSCH"]
         if "coding" in e:
             jobs += ["C_C_LESEN", "C_C_SCHREIBEN"]
 
@@ -136,7 +136,12 @@ class DemoBackend:
         if job_u in ("IS_LESEN", "IS_LOESCHEN"):
             return sys_set, [{"JOB_STATUS": "OKAY"}]
         if e.get("battery") and job_u == "STEUERN_BATTERIETAUSCH_REGISTRIEREN":
+            e["battery"].update(km=183550, count=e["battery"]["count"] + 1)
             return sys_set, [{"JOB_STATUS": "OKAY"}]
+        if e.get("battery") and job_u == "STATUS_BATTERIETAUSCH":
+            b = e["battery"]
+            return sys_set, [{"STAT_KM_BATTERIETAUSCH_WERT": b["km"], "STAT_KM_BATTERIETAUSCH_EINH": "km",
+                              "STAT_ANZAHL_BATTERIETAUSCH_WERT": b["count"], "JOB_STATUS": "OKAY"}]
         if "coding" in e and job_u == "C_C_LESEN":
             return sys_set, [{"CODIERDATEN": bytes(e["coding"]), "JOB_STATUS": "OKAY"}]
         if "coding" in e and job_u == "C_C_SCHREIBEN":
