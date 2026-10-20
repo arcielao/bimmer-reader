@@ -245,6 +245,7 @@ class DemoBackend:
                     (0x2E81, "Demo fault - thermostat warm-up (simulated data)", "Fault stored, not present", 1, "P0128"),
                 ],
                 "live": True,
+                "battery": True,
             },
             "D_0029": {
                 "variant": "DSC_87",
@@ -311,6 +312,8 @@ class DemoBackend:
         jobs = ["INFO", "IDENT", "FS_LESEN", "FS_LOESCHEN", "IS_LESEN", "IS_LOESCHEN", "SERIENNUMMER_LESEN"]
         if e.get("live"):
             jobs += list(self._live().keys())
+        if e.get("battery"):
+            jobs.append("STEUERN_BATTERIETAUSCH_REGISTRIEREN")
 
         if job_u == "_JOBS":
             return sys_set, [{"JOBNAME": j} for j in jobs]
@@ -332,6 +335,8 @@ class DemoBackend:
         if job_u == "SERIENNUMMER_LESEN":
             return sys_set, [{"SERIENNUMMER": "DEMO12345", "JOB_STATUS": "OKAY"}]
         if job_u in ("IS_LESEN", "IS_LOESCHEN"):
+            return sys_set, [{"JOB_STATUS": "OKAY"}]
+        if e.get("battery") and job_u == "STEUERN_BATTERIETAUSCH_REGISTRIEREN":
             return sys_set, [{"JOB_STATUS": "OKAY"}]
         if e.get("live") and job_u in self._live():
             return sys_set, [dict(self._live()[job_u], JOB_STATUS="OKAY")]
@@ -469,6 +474,7 @@ class App:
         ttk.Checkbutton(bar, text="Demo mode (no car)", variable=self.demo_var).pack(side="left", padx=12)
         ttk.Button(bar, text="Quick test (all modules)", command=self.quick_test).pack(side="left", padx=4)
         ttk.Button(bar, text="Save full report...", command=self.save_report).pack(side="left", padx=4)
+        ttk.Button(bar, text="Register new battery...", command=self.register_battery).pack(side="left", padx=4)
         ttk.Button(bar, text="Settings", command=self.open_settings).pack(side="right")
         self.busy_lbl = ttk.Label(bar, text="", foreground=COLORS["accent"])
         self.busy_lbl.pack(side="right", padx=12)
@@ -1004,6 +1010,70 @@ class App:
         with open(path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
         self.log(f"Saved {path}", "ok")
+
+    # ---------------- battery registration ---------------- #
+    BATTERY_JOBS = ("STEUERN_BATTERIETAUSCH_REGISTRIEREN", "BATTERIETAUSCH_REGISTRIEREN", "STEUERN_BATTERIE_TAUSCH_REGISTRIEREN")
+
+    def _dme_module(self) -> dict | None:
+        for m in self.modules:
+            if any(s.upper() in ("D_0012", "D_MOTOR") for s in m["sgbd"]) or m["name"].upper().startswith("DME"):
+                return m
+        return None
+
+    def register_battery(self):
+        if not self._need_connection():
+            return
+        mod = self._dme_module()
+        if not mod:
+            messagebox.showinfo(APP_NAME, "No DME (engine) module in the list. Add one with SGBD D_0012 first.")
+            return
+        self.log(f"Battery registration: looking for the job in {mod['name']}...")
+
+        def find():
+            sgbd = self._resolve(mod)
+            _, sets = self.backend.job(sgbd, "_JOBS")
+            jobs = {fmt(s.get("JOBNAME", "")).upper() for s in sets if s.get("JOBNAME")}
+            match = next((j for j in self.BATTERY_JOBS if j in jobs), None)
+            if not match:
+                match = next((j for j in sorted(jobs) if "BATTERIETAUSCH" in j and "REGIST" in j), None)
+            return match, sorted(j for j in jobs if "BATT" in j or "IBS" in j)
+
+        def found(res, err):
+            if err:
+                self.log(f"{mod['name']}: {err}", "err")
+                return
+            job, related = res
+            if not job:
+                self.log(f"{mod['name']}: no battery registration job found. Battery-related jobs: {', '.join(related) or 'none'}", "err")
+                messagebox.showinfo(APP_NAME, "This DME doesn't offer a battery registration job.\n\n"
+                                    "The battery-related jobs it does have are listed in the log. "
+                                    "You can run one from the Job runner if you know it's the right one.")
+                return
+            if not messagebox.askyesno(
+                APP_NAME,
+                "Register a new battery?\n\n"
+                "Only do this after fitting a NEW battery of the SAME type and capacity as the old one. "
+                "A different capacity or type (e.g. standard to AGM) needs coding instead.\n\n"
+                f"Ignition must be ON, engine off.\n\nJob: {job}",
+                icon="warning",
+            ):
+                return
+            self.log(f"{mod['name']}: running {job}...")
+            self.run(lambda: job_status(self.backend.job(self._resolve(mod), job)[1]), cb=done)
+
+        def done(st, err):
+            if err:
+                self.log(f"{mod['name']}: battery registration failed: {err}", "err")
+                messagebox.showerror(APP_NAME, f"Battery registration failed:\n\n{err}")
+                return
+            if st in ("OKAY", ""):
+                self.log(f"{mod['name']}: new battery registered (JOB_STATUS={st or '-'}).", "ok")
+                messagebox.showinfo(APP_NAME, "New battery registered.")
+            else:
+                self.log(f"{mod['name']}: battery registration answered JOB_STATUS={st}.", "err")
+                messagebox.showwarning(APP_NAME, f"The DME answered JOB_STATUS={st}. The battery may not be registered.")
+
+        self.run(find, cb=found)
 
     # ---------------- ident ---------------- #
     def read_ident(self):

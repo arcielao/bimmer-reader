@@ -18,6 +18,9 @@ What it does:
   arguments, like Tool32. It warns before jobs that look like they write,
   clear, code or actuate.
 - **Full report** – one text file with every module's faults.
+- **Register new battery** – tells the DME a new battery was fitted, so the
+  charging system stops treating it as the old, worn one. Same type and
+  capacity only; a different battery needs coding.
 - **Demo mode** – a simulated car, so you can learn the screens first.
 
 It does **not** code (NCS Expert) or flash (WinKFP).
@@ -93,6 +96,10 @@ about 12 V, and the header shows the battery voltage.
   - `ANSAUGLUFT` = intake air
   
   Some `STATUS_*` jobs need arguments. Use the Job runner for those.
+- **Register new battery...** (toolbar) finds the registration job in the
+  DME (usually `STEUERN_BATTERIETAUSCH_REGISTRIEREN`), asks first, then runs
+  it. Fit the new battery and turn the ignition on before you click it. If
+  your DME doesn't have the job, the log lists its battery-related jobs.
 - **Job runner → List jobs in module.** Filter, pick a job, add arguments
   (separate several with `;`), then **Run**. Tick *Show system set* to see
   which SGBD variant answered.
